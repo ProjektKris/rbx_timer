@@ -1,0 +1,126 @@
+<roblox xmlns:xmime="http://www.w3.org/2005/05/xmlmime" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.roblox.com/roblox.xsd" version="4">
+	<Meta name="ExplicitAutoJoints">true</Meta>
+	<External>null</External>
+	<External>nil</External>
+	<Item class="ModuleScript" referent="RBXB11AC8F45403406F8AF4A17B43439424">
+		<Properties>
+			<BinaryString name="AttributesSerialize"></BinaryString>
+			<Content name="LinkedSource"><null></null></Content>
+			<string name="Name">timer</string>
+			<string name="ScriptGuid">{FEDB2D50-47ED-4C8A-8442-CD0B8210A381}</string>
+			<ProtectedString name="Source"><![CDATA[--[[
+    Author: @ProjektKris
+]]
+
+local module = {
+	modes = {
+		timer = 1,
+		dowhile = 2,
+		whiledo = 3
+	},
+	status = {
+		dead = 1,
+		alive = 2,
+		paused = 3
+	},
+	new = function(t, mode, timer, clock, callback) -- constructor
+		return {
+			-- public variables
+			t = t,
+			mode = mode,
+			timer = timer,
+			clock = clock,
+			callback = callback or function ()end,
+
+			status = 1,
+			next_execution = clock()+t,
+			connection = nil,
+
+			events = {
+				start = Instance.new('BindableEvent'),
+				pause = Instance.new('BindableEvent'),
+				disconnect = Instance.new('BindableEvent'),
+				callback_fired = Instance.new('BindableEvent')
+			},
+
+			-- methods
+			start = function(self)
+				self.events.start:Fire()
+
+				if mode == 1 then--'timer' then
+					local st = self.clock()
+					self.status = 2
+					self.connection = self.timer:Connect(function()
+						local cr
+						local dt = self.clock() - st
+						st = self.clock()
+						if self.status == 3 then
+							self.next_execution = self.next_execution + dt
+						else
+							if self.clock() >= self.next_execution then
+								self:disconnect()
+
+								cr = callback()
+								self.events.callback_fired:Fire(cr)
+							end
+						end
+					end)
+				elseif mode == 2 then--'dowhile' then
+					local cr = callback()
+					self.events.callback_fired:Fire(cr)
+
+					local st = self.clock()
+					self.status = 2
+					self.connection = self.timer:Connect(function()
+						local dt = self.clock() - st
+						st = self.clock()
+						if self.status == 3 then
+							self.next_execution = self.next_execution + dt
+						else
+							if self.clock() >= self.next_execution then
+								self.next_execution = self.clock() + self.t
+								cr = callback()
+								self.events.callback_fired:Fire(cr)
+							end
+						end
+					end)
+				elseif mode == 3 then--'whiledo' then
+					local cr
+					local st = self.clock()
+					self.status = 2
+					self.connection = self.timer:Connect(function()
+						local dt = self.clock() - st
+						st = self.clock()
+						if self.status == 3 then
+							self.next_execution = self.next_execution + dt
+						else
+							if self.clock() >= self.next_execution then
+								self.next_execution = self.clock() + self.t
+								cr = callback()
+								self.events.callback_fired:Fire(cr)
+							end
+						end
+					end)
+				end
+			end,
+
+			pause = function(self)
+				self.status = 3
+				self.events.pause:Fire()
+			end,
+
+			on = function(self, event_name, listener)
+				if self[event_name] then
+					return self[event_name].Event:Connect(listener)
+				end
+			end
+		}
+	end
+}
+
+return module]]></ProtectedString>
+			<int64 name="SourceAssetId">-1</int64>
+			<BinaryString name="Tags"></BinaryString>
+		</Properties>
+	</Item>
+</roblox>
